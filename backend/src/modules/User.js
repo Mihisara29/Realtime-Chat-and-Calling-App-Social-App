@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
+
 const userSchema = new mongoose.Schema({
   fullName:{
     type:String,
@@ -15,6 +16,10 @@ const userSchema = new mongoose.Schema({
     type:String,
     required:true,
     minlength:6,
+  },
+  profilePic:{
+    type:String,
+    required:true,
   },
   bio:{
     type:String,
