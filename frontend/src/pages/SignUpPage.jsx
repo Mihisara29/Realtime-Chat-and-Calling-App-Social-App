@@ -3,7 +3,7 @@ import { ShipWheelIcon } from "lucide-react";
 import React from "react";
 import { useState } from "react";
 import { Link } from "react-router";
-import { signup } from "../lib/api";
+import useSignup from "../hooks/useSignup";
 
 
 const SignUpPage = () => {
@@ -13,12 +13,7 @@ const SignUpPage = () => {
     password: "",
   });
 
-  const queryClient = useQueryClient();
-
-  const { mutate:signupMutation,isPending,error} = useMutation({
-    mutationFn: signup,
-    onSuccess: () => queryClient.invalidateQueries({queryKey:["authUser"]}),
-  })
+  const{isPending,error,signupMutation} = useSignup();
 
   const handleSignup = (e) => {
     e.preventDefault();
