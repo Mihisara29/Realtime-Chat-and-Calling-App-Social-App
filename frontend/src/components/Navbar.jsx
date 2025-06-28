@@ -29,7 +29,7 @@ const Navbar = () => {
             </div>
           )}
 
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 ml-auto">
             <Link to={"/notifications"}>
               <button className="btn btn-ghost btn-circle">
                 <BellIcon className="h-6 w-6 text-base-content opacity-70" />
@@ -42,7 +42,7 @@ const Navbar = () => {
 
           <div className="avatar">
             <div className="w-9 rounded-full">
-              <img src={authUser?.profilepic} alt="User Avatar" />
+              <img src={authUser?.profilePic} alt="User Avatar" />
             </div>
           </div>
 
