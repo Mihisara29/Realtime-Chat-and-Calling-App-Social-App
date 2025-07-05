@@ -5,20 +5,27 @@ import {
   getRecommendedUsers,
   getUserFriends,
   sendFriendRequest,
+  removeFriendRequest,
+  getFriendRequests,
 } from "../lib/api";
 import { Link } from "react-router";
-import { CheckCircleIcon, MapPinIcon, UserPlusIcon, UsersIcon } from "lucide-react";
+import {
+  CheckCircleIcon,
+  MapPinIcon,
+  UserPlusIcon,
+  UsersIcon,
+  UserXIcon,
+} from "lucide-react";
 
 import FriendCard, { getLanguageFlag } from "../components/FriendCard";
 import NofriendsFound from "../components/NofriendsFound";
 import { capitialize } from "../lib/utils";
 
-
-
 const HomePage = () => {
   const queryClient = useQueryClient();
 
   const [outgoingRequestsIds, setOutgoingRequestsIds] = useState(new Set());
+  const [incomingRequestSenderIds, setIncomingRequestSenderIds] = useState([]);
 
   const { data: friends = [], isLoading: loadingFriends } = useQuery({
     queryKey: ["friends"],
@@ -37,25 +44,66 @@ const HomePage = () => {
 
   const { mutate: sendRequestMutation, isPending } = useMutation({
     mutationFn: sendFriendRequest,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] }),
+    onSuccess: (_data, userId) => {
+      setOutgoingRequestsIds((prev) => {
+        const updated = new Set(prev);
+        updated.add(userId);
+        return updated;
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] });
+    },
+  });
+
+  const { mutate: removeRequestMutation, isRemoving } = useMutation({
+    mutationFn: removeFriendRequest,
+    onSuccess: (_data, userId) => {
+      setOutgoingRequestsIds((prev) => {
+        const updated = new Set(prev);
+        updated.delete(userId);
+        return updated;
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] });
+    },
+  });
+
+  const handleFriendRemoved = (removedId) => {
+    queryClient.invalidateQueries({ queryKey: ["friends"] });
+    queryClient.invalidateQueries({ queryKey: ["users"] });
+  };
+
+  const { data: friendRequests, isLoading } = useQuery({
+    queryKey: ["friendRequests"],
+    queryFn: getFriendRequests,
   });
 
   useEffect(() => {
     const outgoingIds = new Set();
     if (outgoingFriendReqs && outgoingFriendReqs.length > 0) {
       outgoingFriendReqs.forEach((req) => {
-        
         outgoingIds.add(req.recipient._id);
       });
       setOutgoingRequestsIds(outgoingIds);
     }
   }, [outgoingFriendReqs]);
 
+  useEffect(() => {
+    if (friendRequests && friendRequests.incomingReqs?.length > 0) {
+      const senderIds = friendRequests.incomingReqs.map(
+        (req) => req.sender._id
+      );
+      setIncomingRequestSenderIds(senderIds);
+    }
+  }, [friendRequests]);
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto space-y-10">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Your Friends</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Your Friends
+          </h2>
           <Link to="/notifications" className="btn btn-outline btn-sm">
             <UsersIcon className="mr-2 size-4" />
             Friend Requests
@@ -71,7 +119,11 @@ const HomePage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {friends.map((friend) => (
-              <FriendCard key={friend._id} friend={friend} />
+              <FriendCard
+                key={friend._id}
+                friend={friend}
+                onFriendRemoved={handleFriendRemoved}
+              />
             ))}
           </div>
         )}
@@ -80,9 +132,12 @@ const HomePage = () => {
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Meet New Learners</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                  Meet New Learners
+                </h2>
                 <p className="opacity-70">
-                  Discover perfect language exchange partners based on your profile
+                  Discover perfect language exchange partners based on your
+                  profile
                 </p>
               </div>
             </div>
@@ -94,7 +149,9 @@ const HomePage = () => {
             </div>
           ) : recommendedUsers.length === 0 ? (
             <div className="card bg-base-200 p-6 text-center">
-              <h3 className="font-semibold text-lg mb-2">No recommendations available</h3>
+              <h3 className="font-semibold text-lg mb-2">
+                No recommendations available
+              </h3>
               <p className="text-base-content opacity-70">
                 Check back later for new language partners!
               </p>
@@ -102,6 +159,9 @@ const HomePage = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {recommendedUsers.map((user) => {
+                const isIncomingRequest = incomingRequestSenderIds.includes(
+                  user._id
+                );
                 const hasRequestBeenSent = outgoingRequestsIds.has(user._id);
 
                 return (
@@ -116,7 +176,9 @@ const HomePage = () => {
                         </div>
 
                         <div>
-                          <h3 className="font-semibold text-lg">{user.fullName}</h3>
+                          <h3 className="font-semibold text-lg">
+                            {user.fullName}
+                          </h3>
                           {user.location && (
                             <div className="flex items-center text-xs opacity-70 mt-1">
                               <MapPinIcon className="size-3 mr-1" />
@@ -138,20 +200,39 @@ const HomePage = () => {
                         </span>
                       </div>
 
-                      {user.bio && <p className="text-sm opacity-70">{user.bio}</p>}
+                      {user.bio && (
+                        <p className="text-sm opacity-70">{user.bio}</p>
+                      )}
 
                       {/* Action button */}
                       <button
                         className={`btn w-full mt-2 ${
-                          hasRequestBeenSent ? "btn-disabled" : "btn-primary"
-                        } `}
-                        onClick={() => sendRequestMutation(user._id)}
-                        disabled={hasRequestBeenSent || isPending}
+                          isIncomingRequest
+                            ? "btn-accent"
+                            : hasRequestBeenSent
+                            ? "btn-error"
+                            : "btn-primary"
+                        }`}
+                        onClick={() => {
+                          if (isIncomingRequest) {
+                            // navigate to friend requests page
+                            window.location.href = "/notifications";
+                          } else if (hasRequestBeenSent) {
+                            removeRequestMutation(user._id);
+                          } else {
+                            sendRequestMutation(user._id);
+                          }
+                        }}
                       >
-                        {hasRequestBeenSent ? (
+                        {isIncomingRequest ? (
                           <>
                             <CheckCircleIcon className="size-4 mr-2" />
-                            Request Sent
+                            Respond
+                          </>
+                        ) : hasRequestBeenSent ? (
+                          <>
+                            <UserXIcon className="size-4 mr-2" />
+                            Remove Request
                           </>
                         ) : (
                           <>
@@ -173,4 +254,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-

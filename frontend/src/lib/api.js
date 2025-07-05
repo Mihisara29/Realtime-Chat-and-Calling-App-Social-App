@@ -62,7 +62,18 @@ export async function acceptFriendRequest(requestId) {
   return response.data;
 }
 
+export async function removeFriendRequest(userId) {
+  const response = await axiosInstance.delete(`/users/remove-friend-request/${userId}`);
+  return response.data;
+}
+
+
 export async function getStreamToken() {
   const response = await axiosInstance.get("/chat/token");
+  return response.data;
+}
+
+export async function removeFriend(removeId) {
+  const response = await axiosInstance.delete(`/users/remove-friend/${removeId}`);
   return response.data;
 }

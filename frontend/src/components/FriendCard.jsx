@@ -1,7 +1,25 @@
 import { Link } from "react-router";
 import { LANGUAGE_TO_FLAG } from "../constants";
+import { removeFriend } from "../lib/api"; 
+import { useState } from "react";
 
-const FriendCard = ({ friend }) => {
+const FriendCard = ({ friend, onFriendRemoved }) => {
+  const [isRemoving, setIsRemoving] = useState(false);
+
+  const handleRemoveFriend = async () => {
+    try {
+      setIsRemoving(true);
+      await removeFriend(friend._id);
+      if (onFriendRemoved) {
+        onFriendRemoved(friend._id); 
+      }
+    } catch (err) {
+      console.error("Error removing friend:", err);
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   return (
     <div className="card bg-base-200 hover:shadow-md transition-shadow">
       <div className="card-body p-4">
@@ -24,13 +42,24 @@ const FriendCard = ({ friend }) => {
           </span>
         </div>
 
-        <Link to={`/chat/${friend._id}`} className="btn btn-outline w-full">
-          Message
-        </Link>
+        <div className="flex flex-col gap-2">
+          <Link to={`/chat/${friend._id}`} className="btn btn-outline w-full">
+            Message
+          </Link>
+
+          <button
+            onClick={handleRemoveFriend}
+            className="btn btn-error btn-sm w-full"
+            disabled={isRemoving}
+          >
+            {isRemoving ? "Removing..." : "Remove"}
+          </button>
+        </div>
       </div>
     </div>
   );
 };
+
 export default FriendCard;
 
 export function getLanguageFlag(language) {

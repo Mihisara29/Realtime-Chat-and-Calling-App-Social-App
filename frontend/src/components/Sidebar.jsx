@@ -30,10 +30,10 @@ const Sidebar = () => {
         </Link>
 
         <Link
-        to="/friends" 
+        to="/edit" 
         className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${currentPath === "/friends" ? "btn-active" : ""}`}>
         <UserIcon className="size-5 text-base-content opacity-70"/>
-        <span>Friends</span>
+        <span>Edit Profile</span>
         </Link>
 
         <Link 

@@ -12,6 +12,7 @@ import PageLoader from './components/PageLoader';
 import useAuthUser from './hooks/useAuthUser';
 import Layout from './components/Layout';
 import { useThemeStore } from './store/useThemeStore';
+import EditProfile from './pages/EditProfile';
 
 
 
@@ -27,7 +28,7 @@ const isOnboarded = authUser?.isOnboarded ;
   if(isLoading) return <PageLoader />
 
   return (
-    <div className='h-screen' data-theme={theme}>
+    <div data-theme={theme}>
       
       <Routes>
 
@@ -79,6 +80,16 @@ const isOnboarded = authUser?.isOnboarded ;
         ) : (
           <Navigate to="/login" />
         )} />
+
+        <Route
+          path='/edit'
+          element={
+            isAuthenticated && isOnboarded ?
+            (<Layout showSidebar={true}>
+               <EditProfile />
+            </Layout>) : <LoginPage />
+          }
+         />
 
       </Routes>
 

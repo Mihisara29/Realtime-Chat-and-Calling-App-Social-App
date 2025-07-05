@@ -103,7 +103,7 @@ export async function acceptFriendRequest(req,res){
     await friendRequest.save();
 
     //add each user to the other's friends array
-    if(friendRequest.status = "accepted"){
+    if(friendRequest.status === "accepted"){
       await User.findByIdAndUpdate(friendRequest.sender,{
         $addToSet:{friends: friendRequest.recipient}
     });
@@ -120,6 +120,33 @@ export async function acceptFriendRequest(req,res){
     res.status(500).json({ message: "Internal Server Error"}); 
   }
 }
+
+export async function removeFriendRequest(req, res) {
+  try {
+    const myId = req.user.id;               // Current logged-in user (recipient)
+    const { userId } = req.params;          // The user who sent the friend request
+
+    // Find the friend request where sender is userId and recipient is current user
+    const friendRequest = await FriendRequest.findOne({
+      sender: userId,
+      recipient: myId,
+      status: "pending",
+    });
+
+    if (!friendRequest) {
+      return res.status(404).json({ message: "Friend request not found" });
+    }
+
+    // Delete the friend request
+    await FriendRequest.findByIdAndDelete(friendRequest._id);
+
+    res.status(200).json({ message: "Friend request removed successfully" });
+  } catch (error) {
+    console.error("Error in removeFriendRequest controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
 
 export async function getFriendRequests(req, res) {
   try {
@@ -155,3 +182,34 @@ export async function getOutgoingFriendReqs(req,res){
   }
   
 }
+
+export async function removeFriend(req, res) {
+  try {
+    const myId = req.user.id; // from cookie/session
+    const { friendId } = req.params; // the friend to remove
+
+    // Check if the friend exists
+    const friend = await User.findById(friendId);
+    if (!friend) {
+      return res.status(404).json({ message: "Friend not found" });
+    }
+
+    // Remove each other from the friends list
+    await User.findByIdAndUpdate(myId, {
+      $pull: { friends: friendId },
+    });
+
+    await User.findByIdAndUpdate(friendId, {
+      $pull: { friends: myId },
+    });
+
+    res.status(200).json({ message: "Friend removed successfully" });
+
+  } catch (error) {
+    console.error("Error in removeFriend controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+
+

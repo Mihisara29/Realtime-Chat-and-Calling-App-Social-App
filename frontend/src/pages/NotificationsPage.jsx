@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { acceptFriendRequest, getFriendRequests } from "../lib/api";
-import { BellIcon, ClockIcon, MessageSquareIcon, UserCheckIcon } from "lucide-react";
+import {
+  acceptFriendRequest,
+  getFriendRequests,
+  removeFriendRequest,
+} from "../lib/api";
+import {
+  BellIcon,
+  ClockIcon,
+  MessageSquareIcon,
+  UserCheckIcon,
+} from "lucide-react";
 import NoNotificationFound from "../components/NoNotificationFound";
 
 const NotificationsPage = () => {
@@ -11,11 +20,18 @@ const NotificationsPage = () => {
     queryFn: getFriendRequests,
   });
 
-  const { mutate: acceptRequestMutation, isPending } = useMutation({
+  const { mutate: acceptRequestMutation, isPending: accepting } = useMutation({
     mutationFn: acceptFriendRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
       queryClient.invalidateQueries({ queryKey: ["friends"] });
+    },
+  });
+
+  const { mutate: removeRequestMutation, isPending: removing } = useMutation({
+    mutationFn: removeFriendRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
     },
   });
 
@@ -25,7 +41,9 @@ const NotificationsPage = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto max-w-4xl space-y-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-6">Notifications</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-6">
+          Notifications
+        </h1>
 
         {isLoading ? (
           <div className="flex justify-center py-12">
@@ -66,13 +84,23 @@ const NotificationsPage = () => {
                             </div>
                           </div>
 
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => acceptRequestMutation(request._id)}
-                            disabled={isPending}
-                          >
-                            Accept
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => acceptRequestMutation(request._id)}
+                              disabled={accepting}
+                            >
+                              Accept
+                            </button>
+
+                            <button
+                              className="btn btn-error btn-sm"
+                              onClick={() => removeRequestMutation(request.sender._id)}
+                              disabled={removing}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -81,7 +109,6 @@ const NotificationsPage = () => {
               </section>
             )}
 
-            {/* ACCEPTED REQS NOTIFICATONS */}
             {acceptedRequests.length > 0 && (
               <section className="space-y-4">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -131,4 +158,5 @@ const NotificationsPage = () => {
     </div>
   );
 };
+
 export default NotificationsPage;
